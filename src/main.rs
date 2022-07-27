@@ -14,6 +14,13 @@ pub enum GameState {
     Dead,
 }
 
+pub enum Direction {
+    North,
+    South,
+    West,
+    East
+}
+
 fn window_conf() -> Conf {
     Conf {
         window_title: "Snek".to_owned(),
