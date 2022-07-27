@@ -14,6 +14,14 @@ pub enum GameState {
     Dead,
 }
 
+#[derive(PartialEq, Clone, Copy)]
+pub enum Direction {
+    North,
+    South,
+    West,
+    East
+}
+
 fn window_conf() -> Conf {
     Conf {
         window_title: "Snek".to_owned(),
@@ -24,22 +32,22 @@ fn window_conf() -> Conf {
     }
 }
 
-fn check_input(currentDir: char) -> char {
-    let dir: char = match (is_key_down(KeyCode::Left) || is_key_down(KeyCode::A), is_key_down(KeyCode::Right) || is_key_down(KeyCode::D)
+fn check_input(current_dir: Direction) -> Direction {
+    let dir: Direction = match (is_key_down(KeyCode::Left) || is_key_down(KeyCode::A), is_key_down(KeyCode::Right) || is_key_down(KeyCode::D)
                          , is_key_down(KeyCode::Up) || is_key_down(KeyCode::W), is_key_down(KeyCode::Down) || is_key_down(KeyCode::S)) {
-                            (true, false, false, false) => 'w',
-                            (false, true, false, false) => 'e',
-                            (false, false, true, false) => 'n',
-                            (false, false, false, true) => 's',
-                            _ => currentDir,
+                            (true, false, false, false) => Direction::West,
+                            (false, true, false, false) => Direction::East,
+                            (false, false, true, false) => Direction::North,
+                            (false, false, false, true) => Direction::South,
+                            _ => current_dir,
                          };
     return dir;
 }
 
 struct SnakeHead {
     rect: Rect,
-    last_dir: char,
-    dir: char,
+    last_dir: Direction,
+    dir: Direction,
 }
 
 impl SnakeHead {
@@ -51,32 +59,33 @@ impl SnakeHead {
                 SIZE.x,
                 SIZE.y
             ),
-            last_dir: 'e',
-            dir: 'e'
+            last_dir: Direction::East,
+            dir: Direction::East
         }
     }
+    
     pub fn set_dir(&mut self) {
-        let tempdir: char = check_input(self.dir);
-        if tempdir == 'e' && self.last_dir != 'w' {
+        let tempdir: Direction = check_input(self.dir);
+        if tempdir == Direction::East && self.last_dir != Direction::West {
             self.dir = tempdir;
-        } else if tempdir == 'w' && self.last_dir != 'e' {
+        } else if tempdir == Direction::West && self.last_dir != Direction::East {
             self.dir = tempdir;
-        } else if tempdir == 'n' && self.last_dir != 's' {
+        } else if tempdir == Direction::North && self.last_dir != Direction::South {
             self.dir = tempdir;
-        } else if tempdir == 's' && self.last_dir != 'n' {
+        } else if tempdir == Direction::South && self.last_dir != Direction::North {
             self.dir = tempdir;
         }
     } 
     
     pub fn update(&mut self) {
         self.rect.y += match self.dir {
-            'n' => -1f32,
-            's' => 1f32,
+            Direction::North => -1f32,
+            Direction::South => 1f32,
             _ => 0f32
         } * SIZE.y;
         self.rect.x += match self.dir {
-            'w' => -1f32,
-            'e' => 1f32,
+            Direction::West => -1f32,
+            Direction::East => 1f32,
             _ => 0f32
         } * SIZE.x;
         self.last_dir = self.dir;
@@ -84,6 +93,12 @@ impl SnakeHead {
     
     pub fn draw(&self) {
         draw_rectangle(self.rect.x, self.rect.y, self.rect.w, self.rect.h, GREEN);
+        match self.dir {
+            Direction::East => draw_rectangle(self.rect.x + 35., self.rect.y + 5., 10., 10., BLACK),
+            Direction::North => draw_rectangle(self.rect.x + 5., self.rect.y + 5., 10., 10., BLACK),
+            Direction::West => draw_rectangle(self.rect.x + 5., self.rect.y + 35., 10., 10., BLACK),
+            Direction::South => draw_rectangle(self.rect.x + 35., self.rect.y + 35., 10., 10., BLACK)
+        }
     }
 }
 
@@ -155,7 +170,7 @@ fn draw_grid() {
         draw_line(0f32, YOFFSET + y * 50f32 - 1f32, screen_width(), YOFFSET + y * 50f32 - 1f32, 3f32, BLACK);
     }
 }
-
+/* Maybe used in the future
 fn resolve_collision(a: &mut Rect, vel: &mut Vec2, b: &Rect) -> bool {
     
     // early exit
@@ -171,13 +186,11 @@ fn resolve_collision(a: &mut Rect, vel: &mut Vec2, b: &Rect) -> bool {
     let to_signum = to.signum(); 
 
     if intersection.w > intersection.h {
-        // bounce on y
         a.y -= to_signum.y * intersection.h;
         match to_signum.y > 0f32 {
             true => vel.y = -vel.y.abs(),
             false => vel.y = vel.y.abs(),
-        }
-        // vel.y = -to_signum.y * vel.y.abs();    
+        } 
     } else {
         // bounce on x
         a.x -= to_signum.x * intersection.w;
@@ -185,10 +198,10 @@ fn resolve_collision(a: &mut Rect, vel: &mut Vec2, b: &Rect) -> bool {
             true => vel.x = vel.x.abs(),
             false => vel.x = -vel.x.abs(),
         }
-        // vel.x = -to_signum.x * vel.x.abs();
     }
     true
 }
+*/
 
 #[macroquad::main(window_conf())]
 async fn main() {
@@ -222,11 +235,13 @@ async fn main() {
                     println!("Space Pressed!");
                 }
                 
+                // simulating slower tickrate
                 if frame_time_till_tick >= tickrate {
-                    if head.dir == 'w' && head.rect.x <= -1f32 || head.dir == 'e' && head.rect.x >= screen_width() - 1f32 - SIZE.x || head.dir == 'n' && head.rect.y <= YOFFSET || head.dir == 's' && head.rect.y >= screen_height() - SIZE.y  - 1f32{
+                    if head.dir == Direction::West && head.rect.x <= -1f32 || head.dir == Direction::East && head.rect.x >= screen_width() - 1f32 - SIZE.x || head.dir == Direction::North && head.rect.y <= YOFFSET || head.dir == Direction::South && head.rect.y >= screen_height() - SIZE.y  - 1f32 {
                         game_state = GameState::Dead;
                         continue;
                     }
+
                     if !body_parts.is_empty() {
                         for i in (0..body_parts.len()).rev() {
                             if i == 0 {
@@ -238,6 +253,7 @@ async fn main() {
                             }
                         }
                     }
+
                     head.update();
                     
                     if head.rect.x == apfel.rect.x && head.rect.y == apfel.rect.y {
@@ -266,22 +282,21 @@ async fn main() {
         }
         clear_background(GRAY);
         
-        
         head.draw();        
         for part in body_parts.iter() {
             part.draw();
         }
+
         apfel.draw();
         draw_info_table();
         draw_grid();
-        let score_text = &format!("Score: {score}");
-        let score_text_dim = measure_text(&score_text, Some(font), 30u16, 1.0);
+        // let score_text_dim = measure_text(&score_text, Some(font), 30u16, 1.0);
         
         draw_text_ex(
-            score_text,
+            &format!("Score: {score}"),
             10f32,
-            40.0,
-            TextParams{font, font_size: 30u16, color:WHITE, ..Default::default()}
+            50.0,
+            TextParams{font, font_size: 50u16, color:WHITE, ..Default::default()}
         );
 
         // thread::sleep(Duration::from_millis(1000));
