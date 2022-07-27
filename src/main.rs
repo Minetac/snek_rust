@@ -252,7 +252,23 @@ async fn main() {
                     head.update();
                     
                     if head.rect.x == apfel.rect.x && head.rect.y == apfel.rect.y {
-                        apfel.respawn(rng.gen_range(0..20) as f32 * SIZE.x - 1f32, rng.gen_range(0..10) as f32 * SIZE.y - 1f32 + YOFFSET);
+                        let mut x: f32;
+                        let mut y: f32;
+                        loop {
+                            let mut check = true;
+                            x = rng.gen_range(0..20) as f32 * SIZE.x - 1.;
+                            y = rng.gen_range(0..10) as f32 * SIZE.y - 1. + YOFFSET;
+
+                            for part in body_parts.iter() {
+                                if x == part.rect.x && y == part.rect.y {
+                                    check = false;
+                                    println!("set new apple location");
+                                }
+                            }
+                            if check{ break; }
+                        }
+                        apfel.respawn(x, y);
+                        // apfel.respawn(rng.gen_range(0..20) as f32 * SIZE.x - 1f32, rng.gen_range(0..10) as f32 * SIZE.y - 1f32 + YOFFSET);
                         body_parts.push(SnakeBody::new());
                         score += 1;
                     }
