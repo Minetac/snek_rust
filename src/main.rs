@@ -1,11 +1,8 @@
 // #![windows_subsystem = "windows"]
 
 use macroquad::{prelude::*};
-use ::rand::{random, thread_rng, Rng};
+use ::rand::{thread_rng, Rng};
 
-
-// use std::{thread, time::Duration};
-// use std::collections::LinkedList;
 
 const SIZE: Vec2 = const_vec2!([50f32, 50f32]);
 const YOFFSET: f32 = 100f32;
