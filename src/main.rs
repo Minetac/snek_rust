@@ -307,10 +307,7 @@ async fn main() {
 
         apfel.draw();
         draw_grid();
-        // let score_text_dim = measure_text(&score_text, Some(font), 30u16, 1.0);
-        
 
-        // thread::sleep(Duration::from_millis(1000));
         // println!("{}", get_fps());
         next_frame().await;
     }
