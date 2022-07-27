@@ -1,4 +1,4 @@
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 
 use macroquad::{prelude::*};
 use ::rand::{thread_rng, Rng};
@@ -92,7 +92,7 @@ impl SnakeHead {
     
     pub fn draw(&self) {
         draw_rectangle(self.rect.x, self.rect.y, self.rect.w, self.rect.h, GREEN);
-        match self.dir {
+        match self.last_dir {
             Direction::East => draw_rectangle(self.rect.x + 35., self.rect.y + 5., 10., 10., BLACK),
             Direction::North => draw_rectangle(self.rect.x + 5., self.rect.y + 5., 10., 10., BLACK),
             Direction::West => draw_rectangle(self.rect.x + 5., self.rect.y + 35., 10., 10., BLACK),
@@ -309,6 +309,5 @@ async fn main() {
         draw_grid();
 
         // println!("{}", get_fps());
-        next_frame().await;
     }
 }
