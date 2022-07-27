@@ -3,7 +3,6 @@
 use macroquad::{prelude::*};
 use ::rand::{thread_rng, Rng};
 
-
 const SIZE: Vec2 = const_vec2!([50f32, 50f32]);
 const YOFFSET: f32 = 100f32;
 
@@ -110,8 +109,8 @@ impl SnakeBody {
     pub fn new() -> Self {
         Self {
             rect: Rect::new(
-                0f32,
-                0f32,
+                -50f32,
+                -50f32,
                 SIZE.x,
                 SIZE.y
             ),
@@ -170,69 +169,65 @@ fn draw_grid() {
         draw_line(0f32, YOFFSET + y * 50f32 - 1f32, screen_width(), YOFFSET + y * 50f32 - 1f32, 3f32, BLACK);
     }
 }
-/* Maybe used in the future
-fn resolve_collision(a: &mut Rect, vel: &mut Vec2, b: &Rect) -> bool {
-    
-    // early exit
-    let intersection = match a.intersect(*b) {
-        Some(intersection) => intersection,
-        None => return false,
-    };
 
-    let a_center = a.point() + a.size() * 0.5f32;
-    let b_center = b.point() + b.size() * 0.5f32;
-    
-    let to = b_center - a_center;
-    let to_signum = to.signum(); 
-
-    if intersection.w > intersection.h {
-        a.y -= to_signum.y * intersection.h;
-        match to_signum.y > 0f32 {
-            true => vel.y = -vel.y.abs(),
-            false => vel.y = vel.y.abs(),
-        } 
-    } else {
-        // bounce on x
-        a.x -= to_signum.x * intersection.w;
-        match to_signum.x < 0f32 {
-            true => vel.x = vel.x.abs(),
-            false => vel.x = -vel.x.abs(),
-        }
-    }
-    true
+pub fn draw_title_text(text: &str, font: Font) {
+    let dims = measure_text(text, Some(font), 50u16, 1.0f32);
+    draw_text_ex(
+        text,
+        screen_width() * 0.5f32 - dims.width * 0.5f32,
+        YOFFSET / 2.,
+        TextParams {font: font, font_size: 50u16, color: DARKGREEN, ..Default::default()}
+    );
 }
-*/
+
 
 #[macroquad::main(window_conf())]
 async fn main() {
+    let font = load_ttf_font("res/Heebo-VariableFont_wght.ttf").await.unwrap();
     let mut game_state: GameState = GameState::Menu;
-    let tickrate: f32 = 1. / 10.;
-    let mut head = SnakeHead::new();
+    let tickrate: f32 = 1. / 7.5;
     let mut frame_time_till_tick:f32 = 0.;
-    let mut body_parts: Vec<SnakeBody> = Vec::new();
-    let mut apfel = Apple::new();
-
     let mut rng = thread_rng();
 
-    let font = load_ttf_font("res/Heebo-VariableFont_wght.ttf").await.unwrap();
+    // init objects
+    let mut head = SnakeHead::new();
+    let mut body_parts: Vec<SnakeBody> = Vec::new();
+    let mut apfel = Apple::new();
     let mut score: u32 = 0;
     
     loop {
+        clear_background(GRAY);
+        draw_info_table();
+        draw_text_ex(
+            &format!("Score: {score}"),
+            10f32,
+            50.0,
+            TextParams{font, font_size: 50u16, color:WHITE, ..Default::default()}
+        );
         match game_state {
             GameState::Menu => {
+                draw_title_text("Press Space to Start!", font);
+                head = SnakeHead::new();
+                body_parts = Vec::new();
+                apfel = Apple::new();
+                score = 0;
                 if is_key_pressed(KeyCode::Space) {
                     game_state = GameState::Game;
                 }
             },
             GameState::Game => {
                 frame_time_till_tick += get_frame_time();
+
+                // debug
                 // println!("{}", frame_time_till_tick);
                 // println!("X: {}, Y: {}", head.rect.x, head.rect.y);
+
                 head.set_dir();
                 
                 if is_key_pressed(KeyCode::Space) {
                     body_parts.push(SnakeBody::new());
                     println!("Space Pressed!");
+                    score += 1;
                 }
                 
                 // simulating slower tickrate
@@ -268,19 +263,26 @@ async fn main() {
                         }
                     }
                     
+                    if score >= 198 {
+                        game_state = GameState::Won;
+                    }
+
                     frame_time_till_tick = tickrate - frame_time_till_tick;
                 }
             },
             GameState::Won => {
-                
+                draw_title_text("You WON the Game, Space to restart", font);
+                if is_key_pressed(KeyCode::Space) {
+                    game_state = GameState::Menu
+                }
             },
             GameState::Dead => {
+                draw_title_text("You Died, Space to restart", font);
                 if is_key_pressed(KeyCode::Space) {
-                    game_state = GameState::Game;
+                    game_state = GameState::Menu;
                 }
             }
         }
-        clear_background(GRAY);
         
         head.draw();        
         for part in body_parts.iter() {
@@ -288,16 +290,9 @@ async fn main() {
         }
 
         apfel.draw();
-        draw_info_table();
         draw_grid();
         // let score_text_dim = measure_text(&score_text, Some(font), 30u16, 1.0);
         
-        draw_text_ex(
-            &format!("Score: {score}"),
-            10f32,
-            50.0,
-            TextParams{font, font_size: 50u16, color:WHITE, ..Default::default()}
-        );
 
         // thread::sleep(Duration::from_millis(1000));
         // println!("{}", get_fps());
