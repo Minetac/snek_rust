@@ -4,6 +4,7 @@ use macroquad::{prelude::*};
 use ::rand::{thread_rng, Rng};
 
 const SIZE: Vec2 = const_vec2!([50f32, 50f32]);
+const FIELD: Vec2 = const_vec2!([20f32, 10f32]);
 const YOFFSET: f32 = 100f32;
 
 pub enum GameState {
@@ -53,8 +54,8 @@ impl SnakeHead {
     pub fn new() -> Self {
         Self {
             rect: Rect::new(
-                50f32 - 1f32,
-                screen_height() * 0.5f32 + YOFFSET - 51f32,
+                1f32,
+                FIELD.y / 2.,
                 SIZE.x,
                 SIZE.y
             ),
@@ -81,22 +82,23 @@ impl SnakeHead {
             Direction::North => -1f32,
             Direction::South => 1f32,
             _ => 0f32
-        } * SIZE.y;
+        };
         self.rect.x += match self.dir {
             Direction::West => -1f32,
             Direction::East => 1f32,
             _ => 0f32
-        } * SIZE.x;
+        };
         self.last_dir = self.dir;
     }
     
     pub fn draw(&self) {
-        draw_rectangle(self.rect.x, self.rect.y, self.rect.w, self.rect.h, GREEN);
+        // draw_rectangle(self.rect.x, self.rect.y, self.rect.w, self.rect.h, GREEN);
+        draw_rectangle(self.rect.x*50.-1., self.rect.y*50.-1.+YOFFSET, self.rect.w, self.rect.h, GREEN);
         match self.last_dir {
-            Direction::East => draw_rectangle(self.rect.x + 35., self.rect.y + 5., 10., 10., BLACK),
-            Direction::North => draw_rectangle(self.rect.x + 5., self.rect.y + 5., 10., 10., BLACK),
-            Direction::West => draw_rectangle(self.rect.x + 5., self.rect.y + 35., 10., 10., BLACK),
-            Direction::South => draw_rectangle(self.rect.x + 35., self.rect.y + 35., 10., 10., BLACK)
+            Direction::East => draw_rectangle(self.rect.x*50.-1.+35., self.rect.y*50.-1.+5.+YOFFSET, 10., 10., BLACK),
+            Direction::North => draw_rectangle(self.rect.x*50.-1.+5., self.rect.y*50.-1.+5.+YOFFSET, 10., 10., BLACK),
+            Direction::West => draw_rectangle(self.rect.x*50.-1.+5., self.rect.y*50.-1.+35.+YOFFSET, 10., 10., BLACK),
+            Direction::South => draw_rectangle(self.rect.x*50.-1.+35., self.rect.y*50.-1.+35.+YOFFSET, 10., 10., BLACK)
         }
     }
 }
@@ -109,8 +111,8 @@ impl SnakeBody {
     pub fn new() -> Self {
         Self {
             rect: Rect::new(
-                -50f32,
-                -50f32,
+                -1f32,
+                -1f32,
                 SIZE.x,
                 SIZE.y
             ),
@@ -123,7 +125,7 @@ impl SnakeBody {
     }
 
     pub fn draw(&self) {
-        draw_rectangle(self.rect.x, self.rect.y, self.rect.w, self.rect.h, GREEN);
+        draw_rectangle(self.rect.x*50.-1., self.rect.y*50.-1.+YOFFSET, self.rect.w, self.rect.h, GREEN);
     }
 }
 
@@ -135,8 +137,8 @@ impl Apple {
     pub fn new() -> Self {
         Self {
             rect: Rect::new(
-                850f32 - 1f32,
-                screen_height() * 0.5f32 + YOFFSET - 51f32,
+                17f32,
+                FIELD.y / 2.,
                 SIZE.x,
                 SIZE.y,
             )
@@ -148,7 +150,7 @@ impl Apple {
     }
 
     pub fn draw(&self) {
-        draw_rectangle(self.rect.x, self.rect.y, self.rect.w, self.rect.h, RED);
+        draw_rectangle(self.rect.x*50.-1., self.rect.y*50.-1.+YOFFSET, self.rect.w, self.rect.h, RED);
     }
 }
 
@@ -232,7 +234,7 @@ async fn main() {
                 
                 // simulating slower tickrate
                 if frame_time_till_tick >= tickrate {
-                    if head.dir == Direction::West && head.rect.x <= -1f32 || head.dir == Direction::East && head.rect.x >= screen_width() - 1f32 - SIZE.x || head.dir == Direction::North && head.rect.y <= YOFFSET || head.dir == Direction::South && head.rect.y >= screen_height() - SIZE.y  - 1f32 {
+                    if head.dir == Direction::West && head.rect.x <= 0f32 || head.dir == Direction::East && head.rect.x >= FIELD.x - 1f32 || head.dir == Direction::North && head.rect.y <= 0f32 || head.dir == Direction::South && head.rect.y >= FIELD.y - 1f32 {
                         game_state = GameState::Dead;
                         continue;
                     }
@@ -251,13 +253,15 @@ async fn main() {
 
                     head.update();
                     
+
+                    // Check Apple Collision
                     if head.rect.x == apfel.rect.x && head.rect.y == apfel.rect.y {
                         let mut x: f32;
                         let mut y: f32;
                         loop {
                             let mut check = true;
-                            x = rng.gen_range(0..20) as f32 * SIZE.x - 1.;
-                            y = rng.gen_range(0..10) as f32 * SIZE.y - 1. + YOFFSET;
+                            x = rng.gen_range(0..20) as f32;
+                            y = rng.gen_range(0..10) as f32;
 
                             for part in body_parts.iter() {
                                 if x == part.rect.x && y == part.rect.y {
@@ -268,7 +272,6 @@ async fn main() {
                             if check{ break; }
                         }
                         apfel.respawn(x, y);
-                        // apfel.respawn(rng.gen_range(0..20) as f32 * SIZE.x - 1f32, rng.gen_range(0..10) as f32 * SIZE.y - 1f32 + YOFFSET);
                         body_parts.push(SnakeBody::new());
                         score += 1;
                     }
@@ -276,6 +279,7 @@ async fn main() {
                     for part in body_parts.iter() {
                         if head.rect.x == part.rect.x && head.rect.y == part.rect.y {
                             game_state = GameState::Dead;
+                            break;
                         }
                     }
                     
@@ -309,5 +313,6 @@ async fn main() {
         draw_grid();
 
         // println!("{}", get_fps());
+        next_frame().await;
     }
 }
